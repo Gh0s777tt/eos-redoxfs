@@ -96,3 +96,9 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
+
+# E-OS R-502: patched cpufeatures that detects aarch64 crypto extensions on
+# Redox via /scheme/sys/cpu (upstream has no Redox runtime detection), so the
+# `aes` crate's ARMv8 backend (enabled by `--cfg aes_armv8`) can activate.
+[patch.crates-io]
+cpufeatures = { path = "vendor/cpufeatures" }

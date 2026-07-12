@@ -1,4 +1,19 @@
 use aes::Aes128;
+
+/// E-OS R-502: read /scheme/sys/cpu and report whether the CPU advertises AES
+/// (ARMv8 Crypto Extensions). This mirrors the runtime choice the `aes` crate
+/// makes via the patched cpufeatures Redox detection.
+#[cfg(all(target_arch = "aarch64", target_os = "redox"))]
+fn aes_hw_available() -> bool {
+    match std::fs::read_to_string("/scheme/sys/cpu") {
+        Ok(text) => text.lines().any(|line| {
+            line.strip_prefix("Features:")
+                .map(|rest| rest.split_whitespace().any(|t| t == "aes"))
+                .unwrap_or(false)
+        }),
+        Err(_) => false,
+    }
+}
 use alloc::{
     collections::{BTreeMap, VecDeque},
     vec,
@@ -98,6 +113,10 @@ impl<D: Disk> FileSystem<D> {
             };
 
             unsafe { fs.reset_allocator()? };
+
+            if fs.cipher_opt.is_some() {
+                fs.log_aes_backend();
+            }
 
             if cleanup {
                 fs.cleanup()?
@@ -215,6 +234,10 @@ impl<D: Disk> FileSystem<D> {
             fs.reset_allocator()?;
         }
 
+        if fs.cipher_opt.is_some() {
+            fs.log_aes_backend();
+        }
+
         fs.tx(|tx| unsafe {
             let mut root = BlockData::new(
                 BlockAddr::new(HEADER_RING + 3, BlockMeta::default()),
@@ -312,6 +335,26 @@ impl<D: Disk> FileSystem<D> {
             false
         }
     }
+
+    /// E-OS R-502: report which AES-XTS backend the `aes` crate selected. It
+    /// uses the ARMv8 hardware path when the CPU advertises AES (detected via
+    /// /scheme/sys/cpu on Redox), constant-time software otherwise. eprintln so
+    /// it is visible without a logger (both mkfs and the mount console surface
+    /// stderr).
+    #[cfg(all(target_arch = "aarch64", target_os = "redox"))]
+    pub(crate) fn log_aes_backend(&self) {
+        eprintln!(
+            "redoxfs: AES-XTS backend: {}",
+            if aes_hw_available() {
+                "hardware (ARMv8 Crypto Extensions)"
+            } else {
+                "software"
+            }
+        );
+    }
+
+    #[cfg(not(all(target_arch = "aarch64", target_os = "redox")))]
+    pub(crate) fn log_aes_backend(&self) {}
 
     pub(crate) fn encrypt(&mut self, data: &mut [u8], addr: BlockAddr) -> bool {
         if let Some(ref cipher) = self.cipher_opt {
