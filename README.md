@@ -1,53 +1,32 @@
-# RedoxFS
+# eos-redoxfs
 
-This is the default filesystem of Redox OS inspired by [ZFS](https://docs.freebsd.org/en/books/handbook/zfs/) and adapted to a microkernel architecture.
+**E-OS fork of [`redox-os/redoxfs`](https://gitlab.redox-os.org/redox-os/redoxfs).** Part of the [**E-OS**](https://github.com/Gh0s777tt/E-OS) ecosystem — a hardened, Crimson-branded downstream of [Redox OS](https://www.redox-os.org).
 
-(It's a replacement for [TFS](https://gitlab.redox-os.org/redox-os/tfs))
+This repository is **RedoxFS**, the Redox filesystem (with optional full-disk encryption).
 
-Current features:
+## E-OS changes vs upstream
 
-- Compatible with Redox and Linux (FUSE)
-- Copy-on-write
-- Data/metadata checksums
-- Transparent encryption
-- Standard Unix file attributes
-- File/directory size limit up to 193TiB (212TB)
-- File/directory quantity limit up to 4 billion per 193TiB (2^32 - 1 = 4294967295)
-- MIT licensed
-- Disk encryption fully supported by the Redox bootloader, letting it load the kernel off an encrypted partition.
+- **Hardware AES-XTS** for full-disk encryption via **ARMv8 Crypto Extensions**, runtime-detected through `/scheme/sys/cpu` (R-502b).
 
-Being MIT licensed, RedoxFS can be bundled on GPL-licensed operating systems (Linux, for example).
+## How it's pinned
 
-### Install RedoxFS
+The E-OS build pins this fork in [`recipes/core/redoxfs/recipe.toml`](https://github.com/Gh0s777tt/E-OS/blob/main/recipes/core/redoxfs/recipe.toml):
 
-```sh
-cargo install redoxfs
-```
+- branch **`master`** · rev **`ce461328b3c3`**
+- up to date with upstream
 
-You can also build RedoxFS from this repository.
+## Build standalone
 
-### Configure your storage device to allow rootless usage
+This fork is normally built by the E-OS cookbook (`make CI=1 …` in the [main repo](https://github.com/Gh0s777tt/E-OS)). To build it on its own you need the Redox toolchain; see the main repo's [build guide](https://github.com/Gh0s777tt/E-OS/blob/main/docs/building.md).
 
-If you are on Linux you need root permission to acess block devices (storage), but it's recommended to run RedoxFS as rootless.
+## Hosting
 
-To do that you need to configure your storage device permission to your user with the following command:
+**GitLab (source of truth):** https://gitlab.com/e-os/eos-redoxfs  
+**GitHub (read-only mirror):** https://github.com/Gh0s777tt/eos-redoxfs
 
-```sh
-sudo setfacl -m u:your-username:rw /path/to/disk
-```
+## License
 
-### Create, mount and customize your RedoxFS partition
+MIT (inherited from upstream Redox). The E-OS project as a whole is AGPL-3.0; see the [main repo](https://github.com/Gh0s777tt/E-OS/blob/main/LICENSE).
 
-See [the instructions in the book](https://doc.redox-os.org/book/redoxfs.html) for RedoxFS tooling usage.
-
-Currently RedoxFS tooling are:
-
-- `redoxfs` mount a RedoxFS disk
-- `redoxfs-ar` write files to a RedoxFS disk
-- `redoxfs-clone` clone a RedoxFS disk
-- `redoxfs-mkfs` create an empty RedoxFS disk
-- `redoxfs-resize` resize a RedoxFS disk
-
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-[![crates.io](http://meritbadge.herokuapp.com/redoxfs)](https://crates.io/crates/redoxfs)
-[![docs.rs](https://docs.rs/redoxfs/badge.svg)](https://docs.rs/redoxfs)
+---
+[E-OS main repo](https://github.com/Gh0s777tt/E-OS) · [Docs](https://github.com/Gh0s777tt/E-OS/tree/main/docs) · [Upstream](https://gitlab.redox-os.org/redox-os/redoxfs)
