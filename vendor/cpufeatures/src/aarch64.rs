@@ -181,7 +181,13 @@ pub fn redox_has_feature(feature: &str) -> bool {
             total += n as usize;
         }
         libc::close(fd);
-        let text = core::str::from_utf8_unchecked(&buf[..total]);
+        // /scheme/sys/cpu is ASCII, but a corrupt/hostile scheme could return
+        // non-UTF-8 bytes; from_utf8_unchecked would be UB, so validate and treat
+        // malformed input as "feature absent" (the safe default).
+        let text = match core::str::from_utf8(&buf[..total]) {
+            Ok(t) => t,
+            Err(_) => return false,
+        };
         for line in text.lines() {
             if let Some(rest) = line.strip_prefix("Features:") {
                 return rest.split_whitespace().any(|t| t == feature);
